@@ -108,9 +108,95 @@ recommendBtn.addEventListener('click', async () => {
     }
 });
 
-function renderGifts(gifts) {
+// Nav Handlers
+document.getElementById('homeNav').addEventListener('click', () => {
+    resultsSection.innerHTML = '';
+    document.querySelector('.hero').style.display = 'grid';
+});
+
+document.getElementById('favoritesNav').addEventListener('click', fetchFavorites);
+document.getElementById('occasionsNav').addEventListener('click', () => {
+    if (!authToken) return alert('Please login first');
+    renderOccasionsView();
+});
+
+async function fetchFavorites() {
+    if (!authToken) return alert('Please login first');
+    document.querySelector('.hero').style.display = 'none';
+    resultsSection.innerHTML = '<p class="status">Loading your favorites...</p>';
+
+    try {
+        const response = await fetch(`${API_URL}/gifts/favorites`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        renderGifts(data.gifts, true);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function renderOccasionsView() {
+    document.querySelector('.hero').style.display = 'none';
+    resultsSection.innerHTML = `
+        <div class="occasions-view glass">
+            <h2>Manage Your Occasions</h2>
+            <div class="add-occasion">
+                <input type="text" id="occName" placeholder="Event Name (e.g. Mom's Birthday)">
+                <input type="date" id="occDate">
+                <button onclick="addOccasion()" class="premium-btn">Add Occasion</button>
+            </div>
+            <div id="occasionsList"></div>
+        </div>
+    `;
+    fetchOccasions();
+}
+
+async function fetchOccasions() {
+    try {
+        const response = await fetch(`${API_URL}/occasions`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        const list = document.getElementById('occasionsList');
+        list.innerHTML = data.occasions.map(occ => `
+            <div class="occasion-item">
+                <span>${occ.name} - ${new Date(occ.date).toLocaleDateString()}</span>
+                <button onclick="deleteOccasion(${occ.id})">Remove</button>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function addOccasion() {
+    const name = document.getElementById('occName').value;
+    const date = document.getElementById('occDate').value;
+    if (!name || !date) return;
+
+    await fetch(`${API_URL}/occasions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ name, date })
+    });
+    fetchOccasions();
+}
+
+async function deleteOccasion(id) {
+    await fetch(`${API_URL}/occasions/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    fetchOccasions();
+}
+
+function renderGifts(gifts, isFavorites = false) {
     if (!gifts || gifts.length === 0) {
-        resultsSection.innerHTML = '<p class="status">No gifts found. Try different interests!</p>';
+        resultsSection.innerHTML = `<p class="status">${isFavorites ? 'No saved gifts yet.' : 'No gifts found. Try different interests!'}</p>`;
         return;
     }
 
@@ -120,7 +206,9 @@ function renderGifts(gifts) {
             <h3>${gift.name}</h3>
             <p>${gift.description}</p>
             <div class="price">$${gift.price}</div>
-            <button class="premium-btn favorite-btn" onclick="toggleFavorite(${gift.id})">Save</button>
+            <button class="premium-btn favorite-btn" onclick="toggleFavorite(${gift.id})">
+                ${isFavorites ? 'Remove' : 'Save'}
+            </button>
         </div>
     `).join('');
 }
