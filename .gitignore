@@ -1,3 +1,6 @@
-node_modules\n.env\ndist\n.vscode
-
-/src/generated/prisma
+node_modules
+.env
+dist
+.vscode
+prisma/migrations
+*.log
