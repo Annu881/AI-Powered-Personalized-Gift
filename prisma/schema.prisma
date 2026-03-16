@@ -14,8 +14,10 @@ model User {
   email     String   @unique
   password  String
   name      String?
+  mbtiType  String?
   gifts     Gift[]
   favorites Favorite[]
+  customizations Customization[]
   occasions Occasion[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -28,13 +30,29 @@ model Gift {
   price       Float
   category    String
   tags        String[]
+  mbtiType    String?
   imageUrl    String?
   userId      Int?
   user        User?    @relation(fields: [userId], references: [id])
   favoredBy   Favorite[]
+  customizations Customization[]
   occasions   Occasion[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Customization {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  giftId    Int
+  gift      Gift     @relation(fields: [giftId], references: [id])
+  nameText  String?
+  message   String?
+  photoUrl  String?
+  colorTheme String?
+  fontStyle String?
+  createdAt DateTime @default(now())
 }
 
 model Favorite {

@@ -8,6 +8,8 @@ import healthRoutes from './routes/health.routes';
 import authRoutes from './routes/auth.routes';
 import giftRoutes from './routes/gift.routes';
 import occasionRoutes from './routes/occasion.routes';
+import mbtiRoutes from './routes/mbti.routes';
+import customizationRoutes from './routes/customization.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +29,8 @@ app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/gifts', giftRoutes);
 app.use('/api/occasions', occasionRoutes);
+app.use('/api/mbti', mbtiRoutes);
+app.use('/api/customization', customizationRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

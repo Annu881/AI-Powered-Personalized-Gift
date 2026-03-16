@@ -1,6 +1,26 @@
 const API_URL = 'http://localhost:3000/api';
 let authToken = localStorage.getItem('authToken');
 let isLogin = true;
+let userPersonality = null;
+let currentGift = null;
+let personalityStyles = null;
+
+// MBTI Questions
+const quizQuestions = [
+    { q: "You prefer spending time alone to recharge.", type: "I/E", options: [{ t: "I", l: "Strongly Agree" }, { t: "I", l: "Agree" }, { t: "E", l: "Disagree" }, { t: "E", l: "Strongly Disagree" }] },
+    { q: "You focus more on facts than theories.", type: "S/N", options: [{ t: "S", l: "Strongly Agree" }, { t: "S", l: "Agree" }, { t: "N", l: "Disagree" }, { t: "N", l: "Strongly Disagree" }] },
+    { q: "You make decisions based on logic rather than emotion.", type: "T/F", options: [{ t: "T", l: "Strongly Agree" }, { t: "T", l: "Agree" }, { t: "F", l: "Disagree" }, { t: "F", l: "Strongly Disagree" }] },
+    { q: "You prefer having a detailed plan to being spontaneous.", type: "J/P", options: [{ t: "J", l: "Strongly Agree" }, { t: "J", l: "Agree" }, { t: "P", l: "Disagree" }, { t: "P", l: "Strongly Disagree" }] },
+    { q: "You are often the first to start a conversation.", type: "I/E", options: [{ t: "E", l: "Strongly Agree" }, { t: "E", l: "Agree" }, { t: "I", l: "Disagree" }, { t: "I", l: "Strongly Disagree" }] },
+    { q: "You trust your gut feelings more than data.", type: "S/N", options: [{ t: "N", l: "Strongly Agree" }, { t: "N", l: "Agree" }, { t: "S", l: "Disagree" }, { t: "S", l: "Strongly Disagree" }] },
+    { q: "You value harmony over being right in an argument.", type: "T/F", options: [{ t: "F", l: "Strongly Agree" }, { t: "F", l: "Agree" }, { t: "T", l: "Disagree" }, { t: "T", l: "Strongly Disagree" }] },
+    { q: "You find it easy to adapt to new situations.", type: "J/P", options: [{ t: "P", l: "Strongly Agree" }, { t: "P", l: "Agree" }, { t: "J", l: "Disagree" }, { t: "J", l: "Strongly Disagree" }] },
+    { q: "Crowded social events energize you.", type: "I/E", options: [{ t: "E", l: "Strongly Agree" }, { t: "E", l: "Agree" }, { t: "I", l: "Disagree" }, { t: "I", l: "Strongly Disagree" }] },
+    { q: "You love imagining complex possibilities.", type: "S/N", options: [{ t: "N", l: "Strongly Agree" }, { t: "N", l: "Agree" }, { t: "S", l: "Disagree" }, { t: "S", l: "Strongly Disagree" }] }
+];
+
+let quizAnswers = [];
+let currentQuestionIndex = 0;
 
 // DOM Elements
 const authBtn = document.getElementById('authBtn');
@@ -15,222 +35,238 @@ const recommendBtn = document.getElementById('recommendBtn');
 const resultsSection = document.getElementById('resultsSection');
 const interestInput = document.getElementById('interestInput');
 const categoryFilter = document.getElementById('categoryFilter');
-const budgetFilter = document.getElementById('budgetFilter');
+const startQuizBtn = document.getElementById('startQuizBtn');
+const quizSection = document.getElementById('quizSection');
+const quizContainer = document.getElementById('quizContainer');
+const nextBtn = document.getElementById('nextBtn');
+const prevBtn = document.getElementById('prevBtn');
+const customSection = document.getElementById('customSection');
+const mockupCanvas = document.getElementById('mockupCanvas');
+const themeName = document.getElementById('themeName');
+const custNameInput = document.getElementById('custName');
+const custMsgInput = document.getElementById('custMessage');
 
 // Initialize
 updateUIForAuth();
 
-// Auth Logic
+// Nav Handlers
+document.getElementById('homeNav').addEventListener('click', () => {
+    hideAllSections();
+    document.querySelector('.hero').style.display = 'grid';
+});
+
+function hideAllSections() {
+    resultsSection.innerHTML = '';
+    document.querySelector('.hero').style.display = 'none';
+    quizSection.style.display = 'none';
+    customSection.style.display = 'none';
+}
+
+// Quiz Handlers
+startQuizBtn.addEventListener('click', () => {
+    hideAllSections();
+    quizSection.style.display = 'block';
+    currentQuestionIndex = 0;
+    quizAnswers = [];
+    renderQuestion();
+});
+
+function renderQuestion() {
+    const q = quizQuestions[currentQuestionIndex];
+    quizContainer.innerHTML = `
+        <div class="question">
+            <h3>Question ${currentQuestionIndex + 1}/10</h3>
+            <p>${q.q}</p>
+            <div class="options-list">
+                ${q.options.map((opt, i) => `
+                    <div class="option ${quizAnswers[currentQuestionIndex] === opt.t ? 'selected' : ''}" onclick="selectOption('${opt.t}')">
+                        ${opt.l}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    prevBtn.style.display = currentQuestionIndex > 0 ? 'block' : 'none';
+    nextBtn.innerText = currentQuestionIndex === 9 ? 'Finish' : 'Next';
+}
+
+window.selectOption = (type) => {
+    quizAnswers[currentQuestionIndex] = type;
+    renderQuestion();
+};
+
+nextBtn.addEventListener('click', async () => {
+    if (!quizAnswers[currentQuestionIndex]) return alert("Please select an answer!");
+
+    if (currentQuestionIndex < 9) {
+        currentQuestionIndex++;
+        renderQuestion();
+    } else {
+        await finishQuiz();
+    }
+});
+
+prevBtn.addEventListener('click', () => {
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderQuestion();
+    }
+});
+
+async function finishQuiz() {
+    quizSection.innerHTML = '<h2>Analyzing your personality...</h2>';
+    const response = await fetch(`${API_URL}/mbti/quiz`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: quizAnswers })
+    });
+    const data = await response.json();
+    userPersonality = data.personality;
+    hideAllSections();
+    resultsSection.innerHTML = `
+        <div class="status glass" style="padding: 2rem; text-align: center; margin: 2rem 10%;">
+            <h2>You are an ${data.personality}!</h2>
+            <p>${data.description}</p>
+            <button class="premium-btn" onclick="fetchMBTIRecommendations()">See Top 5 Gifts</button>
+        </div>
+    `;
+}
+
+window.fetchMBTIRecommendations = async () => {
+    resultsSection.innerHTML = '<p class="status">Loading tailored gifts...</p>';
+    const response = await fetch(`${API_URL}/gifts/recommendations?mbtiType=${userPersonality}&limit=5`);
+    const data = await response.json();
+    renderGifts(data.gifts);
+};
+
+// Customization & Mockup
+window.startCustomizing = async (giftId, giftName, giftImg) => {
+    if (!userPersonality) return alert("Take the personality quiz first!");
+    hideAllSections();
+    customSection.style.display = 'grid';
+    currentGift = { id: giftId, name: giftName, img: giftImg };
+
+    const styleRes = await fetch(`${API_URL}/customization/styles/${userPersonality}`);
+    personalityStyles = await styleRes.json();
+    themeName.innerText = personalityStyles.colorTheme;
+
+    drawMockup();
+};
+
+function drawMockup() {
+    const ctx = mockupCanvas.getContext('2d');
+    const name = custNameInput.value || "Your Name";
+    const msg = custMsgInput.value || "Your Message Here";
+
+    // Clear and background
+    ctx.fillStyle = personalityStyles.bg;
+    ctx.fillRect(0, 0, 400, 400);
+
+    // Accent header
+    ctx.fillStyle = personalityStyles.accent;
+    ctx.fillRect(0, 0, 400, 80);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `bold 24px ${personalityStyles.fontStyle}`;
+    ctx.textAlign = "center";
+    ctx.fillText(currentGift.name, 200, 50);
+
+    // Main text
+    ctx.fillStyle = personalityStyles.bg === "#ffffff" ? "#000000" : "#ffffff";
+    ctx.font = `20px ${personalityStyles.fontStyle}`;
+    ctx.fillText(name, 200, 150);
+
+    ctx.font = `italic 16px ${personalityStyles.fontStyle}`;
+    const lines = msg.split('\n');
+    lines.forEach((line, i) => ctx.fillText(line, 200, 250 + (i * 25)));
+
+    // Watermark
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = "#888888";
+    ctx.font = "12px sans-serif";
+    ctx.fillText("GiftGenie AI Mockup", 200, 380);
+    ctx.globalAlpha = 1.0;
+}
+
+custNameInput.addEventListener('input', drawMockup);
+custMsgInput.addEventListener('input', drawMockup);
+
+document.getElementById('saveDesignBtn').addEventListener('click', async () => {
+    if (!authToken) return alert("Login to save your design!");
+
+    const response = await fetch(`${API_URL}/customization`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+            giftId: currentGift.id,
+            nameText: custNameInput.value,
+            message: custMsgInput.value,
+            colorTheme: personalityStyles.colorTheme,
+            fontStyle: personalityStyles.fontStyle
+        })
+    });
+    const data = await response.json();
+    alert("Design saved successfully!");
+});
+
+// Helper: Render Gifts
+function renderGifts(gifts) {
+    if (!gifts || gifts.length === 0) {
+        resultsSection.innerHTML = '<p class="status">No gifts found for your personality yet!</p>';
+        return;
+    }
+    resultsSection.innerHTML = gifts.map(gift => `
+        <div class="gift-card glass">
+            <img src="${gift.imageUrl || 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48'}" alt="${gift.name}">
+            <h3>${gift.name}</h3>
+            <div class="price">$${gift.price}</div>
+            <button class="premium-btn" onclick="startCustomizing(${gift.id}, '${gift.name.replace(/'/g, "\\'")}', '${gift.imageUrl}')">Customize</button>
+        </div>
+    `).join('');
+}
+
+// Auth UI logic (kept from previous version)
+function updateUIForAuth() {
+    authBtn.innerText = authToken ? 'Logout' : 'Login';
+}
+
 authBtn.addEventListener('click', () => {
     if (authToken) {
-        logout();
+        authToken = null;
+        localStorage.removeItem('authToken');
+        updateUIForAuth();
     } else {
         authModal.style.display = 'block';
     }
 });
-
 closeModal.addEventListener('click', () => authModal.style.display = 'none');
-
 toggleAuth.addEventListener('click', () => {
     isLogin = !isLogin;
     modalTitle.innerText = isLogin ? 'Login' : 'Register';
     nameInput.style.display = isLogin ? 'none' : 'block';
     submitAuth.innerText = isLogin ? 'Login' : 'Register';
-    toggleAuth.innerHTML = isLogin ? "Don't have an account? <span>Register</span>" : "Already have an account? <span>Login</span>";
 });
-
 authForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const endpoint = isLogin ? '/auth/login' : '/auth/register';
     const email = document.getElementById('emailInput').value;
     const password = document.getElementById('passwordInput').value;
     const name = nameInput.value;
-
-    try {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, name })
-        });
-        const data = await response.json();
-
-        if (data.token) {
-            authToken = data.token;
-            localStorage.setItem('authToken', authToken);
-            authModal.style.display = 'none';
-            updateUIForAuth();
-        } else {
-            alert(data.error || 'Auth failed');
-        }
-    } catch (err) {
-        console.error(err);
-        alert('Server error');
-    }
-});
-
-function logout() {
-    authToken = null;
-    localStorage.removeItem('authToken');
-    updateUIForAuth();
-}
-
-function updateUIForAuth() {
-    authBtn.innerText = authToken ? 'Logout' : 'Login';
-}
-
-// Recommendation Logic
-recommendBtn.addEventListener('click', async () => {
-    const interests = interestInput.value;
-    const category = categoryFilter.value;
-    const budget = budgetFilter.value;
-
-    let minPrice = '', maxPrice = '';
-    if (budget === '0-50') { minPrice = 0; maxPrice = 50; }
-    else if (budget === '50-150') { minPrice = 50; maxPrice = 150; }
-    else if (budget === '150+') { minPrice = 150; }
-
-    resultsSection.innerHTML = '<p class="status">Magically searching for gifts...</p>';
-
-    try {
-        const params = new URLSearchParams({
-            interests,
-            category,
-            minPrice,
-            maxPrice
-        });
-
-        const response = await fetch(`${API_URL}/gifts/recommendations?${params}`);
-        const data = await response.json();
-
-        renderGifts(data.gifts);
-    } catch (err) {
-        resultsSection.innerHTML = '<p class="status">Server is offline. Start the backend first!</p>';
-    }
-});
-
-// Nav Handlers
-document.getElementById('homeNav').addEventListener('click', () => {
-    resultsSection.innerHTML = '';
-    document.querySelector('.hero').style.display = 'grid';
-});
-
-document.getElementById('favoritesNav').addEventListener('click', fetchFavorites);
-document.getElementById('occasionsNav').addEventListener('click', () => {
-    if (!authToken) return alert('Please login first');
-    renderOccasionsView();
-});
-
-async function fetchFavorites() {
-    if (!authToken) return alert('Please login first');
-    document.querySelector('.hero').style.display = 'none';
-    resultsSection.innerHTML = '<p class="status">Loading your favorites...</p>';
-
-    try {
-        const response = await fetch(`${API_URL}/gifts/favorites`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const data = await response.json();
-        renderGifts(data.gifts, true);
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-function renderOccasionsView() {
-    document.querySelector('.hero').style.display = 'none';
-    resultsSection.innerHTML = `
-        <div class="occasions-view glass">
-            <h2>Manage Your Occasions</h2>
-            <div class="add-occasion">
-                <input type="text" id="occName" placeholder="Event Name (e.g. Mom's Birthday)">
-                <input type="date" id="occDate">
-                <button onclick="addOccasion()" class="premium-btn">Add Occasion</button>
-            </div>
-            <div id="occasionsList"></div>
-        </div>
-    `;
-    fetchOccasions();
-}
-
-async function fetchOccasions() {
-    try {
-        const response = await fetch(`${API_URL}/occasions`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const data = await response.json();
-        const list = document.getElementById('occasionsList');
-        list.innerHTML = data.occasions.map(occ => `
-            <div class="occasion-item">
-                <span>${occ.name} - ${new Date(occ.date).toLocaleDateString()}</span>
-                <button onclick="deleteOccasion(${occ.id})">Remove</button>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-async function addOccasion() {
-    const name = document.getElementById('occName').value;
-    const date = document.getElementById('occDate').value;
-    if (!name || !date) return;
-
-    await fetch(`${API_URL}/occasions`, {
+    const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ name, date })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name })
     });
-    fetchOccasions();
-}
-
-async function deleteOccasion(id) {
-    await fetch(`${API_URL}/occasions/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${authToken}` }
-    });
-    fetchOccasions();
-}
-
-function renderGifts(gifts, isFavorites = false) {
-    if (!gifts || gifts.length === 0) {
-        resultsSection.innerHTML = `<p class="status">${isFavorites ? 'No saved gifts yet.' : 'No gifts found. Try different interests!'}</p>`;
-        return;
+    const data = await response.json();
+    if (data.token) {
+        authToken = data.token;
+        localStorage.setItem('authToken', authToken);
+        authModal.style.display = 'none';
+        updateUIForAuth();
+    } else {
+        alert(data.error);
     }
-
-    resultsSection.innerHTML = gifts.map(gift => `
-        <div class="gift-card glass">
-            <img src="${gift.imageUrl || 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=2040&auto=format&fit=crop'}" alt="${gift.name}">
-            <h3>${gift.name}</h3>
-            <p>${gift.description}</p>
-            <div class="price">$${gift.price}</div>
-            <button class="premium-btn favorite-btn" onclick="toggleFavorite(${gift.id})">
-                ${isFavorites ? 'Remove' : 'Save'}
-            </button>
-        </div>
-    `).join('');
-}
-
-async function toggleFavorite(giftId) {
-    if (!authToken) {
-        alert('Please login to save favorites!');
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_URL}/gifts/favorites`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({ giftId })
-        });
-        const data = await response.json();
-        alert(data.status === 'added' ? 'Added to favorites!' : 'Removed from favorites!');
-    } catch (err) {
-        console.error(err);
-    }
-}
+});

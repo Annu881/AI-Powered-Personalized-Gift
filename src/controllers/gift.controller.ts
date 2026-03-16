@@ -3,12 +3,16 @@ import prisma from '../config/db';
 
 export const getRecommendations = async (req: Request, res: Response) => {
     try {
-        const { occasion, category, minPrice, maxPrice, interests, limit } = req.query;
+        const { occasion, category, minPrice, maxPrice, interests, limit, mbtiType } = req.query;
 
         let where: any = {};
 
         if (category) {
             where.category = { contains: category as string, mode: 'insensitive' };
+        }
+
+        if (mbtiType) {
+            where.mbtiType = mbtiType as string;
         }
 
         if (minPrice || maxPrice) {

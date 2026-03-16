@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div class="background-blobs">
         <div class="blob blob-1"></div>
@@ -30,7 +32,8 @@
                 <h1>Find the <span>Perfect Gift</span> with AI</h1>
                 <p>Personalized recommendations for any occasion, powered by advanced artificial intelligence.</p>
                 <div class="search-box">
-                    <input type="text" id="interestInput" placeholder="What are their interests? (e.g. gaming, coffee, coding)">
+                    <input type="text" id="interestInput"
+                        placeholder="What are their interests? (e.g. gaming, coffee, coding)">
                     <button id="recommendBtn" class="search-btn">Generate Ideas</button>
                 </div>
                 <div class="filters">
@@ -47,12 +50,41 @@
                         <option value="50-150">$50 - $150</option>
                         <option value="150+">$150+</option>
                     </select>
+                    <button id="startQuizBtn" class="premium-btn"
+                        style="background: var(--accent); color: var(--bg);">Take Quiz</button>
                 </div>
             </div>
             <div class="hero-image">
                 <div class="image-wrapper">
-                   <!-- Image will be injected via JS or CSS background -->
+                    <!-- Image will be injected via JS or CSS background -->
                 </div>
+            </div>
+        </section>
+
+        <!-- Quiz View -->
+        <section id="quizSection" class="glass" style="display: none; padding: 3rem; margin: 2rem 10%;">
+            <h2 id="quizTitle">MBTI Personality Quiz</h2>
+            <div id="quizContainer"></div>
+            <div class="navigation-btns">
+                <button id="prevBtn" class="premium-btn" style="display: none;">Previous</button>
+                <button id="nextBtn" class="premium-btn">Next</button>
+            </div>
+        </section>
+
+        <!-- Customization View -->
+        <section id="customSection" class="glass"
+            style="display: none; padding: 3rem; margin: 2rem 10%; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <div class="custom-controls">
+                <h2>Customize Your Gift</h2>
+                <input type="text" id="custName" placeholder="Recipient Name">
+                <textarea id="custMessage" placeholder="Custom Message"></textarea>
+                <div class="style-previews">
+                    <p>Personality Theme: <span id="themeName">Default</span></p>
+                </div>
+                <button id="saveDesignBtn" class="premium-btn">Save Design</button>
+            </div>
+            <div class="mockup-preview">
+                <canvas id="mockupCanvas" width="400" height="400" style="width: 100%; border-radius: 20px;"></canvas>
             </div>
         </section>
 
@@ -76,4 +108,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
