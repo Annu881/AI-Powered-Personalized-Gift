@@ -275,3 +275,43 @@ select {
         padding: 2rem;
     }
 }
+
+.occasions-view {
+    padding: 3rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.add-occasion {
+    display: flex;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.add-occasion input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    padding: 0.8rem;
+    border-radius: 10px;
+    color: white;
+    flex: 1;
+}
+
+.occasion-item {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.occasion-item button {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+}
