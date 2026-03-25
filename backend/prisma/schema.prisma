@@ -1,0 +1,132 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int             @id @default(autoincrement())
+  email          String          @unique
+  password       String
+  name           String?
+  mbtiType       String?
+  role           Role            @default(USER)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  customizations Customization[]
+  favorites      Favorite[]
+  gifts          Gift[]          @relation("UserGifts")
+  occasions      Occasion[]
+  orders         Order[]
+}
+
+model Vendor {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  gifts     Gift[]
+}
+
+model Gift {
+  id             Int             @id @default(autoincrement())
+  name           String
+  description    String
+  basePrice      Float
+  customPrice    Float           @default(15.0)
+  category       String
+  tags           String
+  mbtiType       String?
+  imageUrl       String?
+  userId         Int?
+  vendorId       Int?
+  status         String          @default("PENDING")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  customizations Customization[]
+  favoredBy      Favorite[]
+  vendor         Vendor?         @relation(fields: [vendorId], references: [id])
+  user           User?           @relation("UserGifts", fields: [userId], references: [id])
+  occasions      Occasion[]
+  orderItems     OrderItem[]
+}
+
+model Customization {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  giftId       Int
+  nameText     String?
+  message      String?
+  photoUrl     String?
+  colorTheme   String?
+  fontStyle    String?
+  status       String    @default("PENDING")
+  approvalDate DateTime?
+  vendorNote   String?
+  createdAt    DateTime  @default(now())
+  gift         Gift      @relation(fields: [giftId], references: [id])
+  user         User      @relation(fields: [userId], references: [id])
+  orderItems   OrderItem[]
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  giftId    Int
+  createdAt DateTime @default(now())
+  gift      Gift     @relation(fields: [giftId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, giftId])
+}
+
+model Occasion {
+  id        Int      @id @default(autoincrement())
+  name      String
+  date      DateTime
+  userId    Int
+  giftId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  gift      Gift?    @relation(fields: [giftId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  totalAmount Float
+  status      String      @default("UNPAID")
+  createdAt   DateTime    @default(now())
+  user        User        @relation(fields: [userId], references: [id])
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id              Int            @id @default(autoincrement())
+  orderId         Int
+  giftId          Int
+  isCustomized    Boolean        @default(false)
+  priceAtBuy      Float
+  customizationId Int?
+  customization   Customization? @relation(fields: [customizationId], references: [id])
+  gift            Gift           @relation(fields: [giftId], references: [id])
+  order           Order          @relation(fields: [orderId], references: [id])
+}
+
+enum Role {
+  USER
+  VENDOR
+  ADMIN
+}
+
+enum GiftStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
